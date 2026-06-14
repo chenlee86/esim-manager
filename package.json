@@ -1,0 +1,15 @@
+{
+  "name": "esim-manager",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:create": "wrangler d1 create esim-manager",
+    "db:migrate:local": "wrangler d1 execute esim-manager --local --file=./migrations/0001_schema.sql",
+    "db:migrate:prod": "wrangler d1 execute esim-manager --remote --file=./migrations/0001_schema.sql"
+  },
+  "devDependencies": {
+    "wrangler": "^3.80.0"
+  }
+}

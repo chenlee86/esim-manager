@@ -1,0 +1,25 @@
+name = "esim-manager"
+main = "src/worker.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# 静态资源目录
+assets = { directory = "./public" }
+
+# 定时任务：每天北京时间 09:00 (UTC 01:00) 检查并发送通知
+[triggers]
+crons = ["0 1 * * *"]
+
+# D1 数据库 (执行 npm run db:create 后替换 database_id)
+[[d1_databases]]
+binding = "DB"
+database_name = "esim-manager"
+database_id = "YOUR_D1_DATABASE_ID_HERE"
+
+# 使用 wrangler secret put <KEY> 设置以下密钥：
+# ADMIN_SECRET      - 管理页面登录密码
+# TELEGRAM_BOT_TOKEN - Telegram Bot Token
+# TELEGRAM_CHAT_ID   - 接收通知的 Chat ID
+# RESEND_API_KEY     - Resend 邮件服务 API Key (https://resend.com)
+# EMAIL_TO           - 接收通知的邮箱
+# EMAIL_FROM         - 发送方邮箱 (需在 Resend 验证域名)

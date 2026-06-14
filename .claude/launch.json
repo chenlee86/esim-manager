@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "esim-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "-p", "3456", "public"],
+      "port": 3456
+    }
+  ]
+}

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>保号管理</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+</head>
+<body>
+
+<!-- ── Login ── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div style="font-size:40px;margin-bottom:12px">📱</div>
+    <h1>保号管理</h1>
+    <p>eSIM · 服务器 · 手机号 到期提醒</p>
+    <form id="login-form">
+      <input type="password" id="password" placeholder="输入管理密码" autocomplete="current-password" required>
+      <button type="submit" class="btn-primary">登录</button>
+      <div id="login-error" class="login-error"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ── App ── -->
+<div id="app" class="hidden">
+
+  <!-- Navigation -->
+  <nav>
+    <div class="nav-brand">📱 保号管理</div>
+    <button class="nav-tab active" data-tab="dashboard" onclick="switchTab('dashboard')">仪表盘</button>
+    <button class="nav-tab" data-tab="settings" onclick="switchTab('settings')">通知设置</button>
+    <div class="nav-spacer"></div>
+    <button class="btn-notify" id="btn-notify" onclick="sendTestNotify()">🔔 立即发送通知</button>
+    <button class="btn-logout" onclick="logout()">退出</button>
+  </nav>
+
+  <main>
+
+    <!-- Dashboard -->
+    <section id="section-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="label">全部项目</div>
+          <div class="value" id="stat-total">—</div>
+        </div>
+        <div class="stat-card overdue">
+          <div class="label">🔴 已逾期</div>
+          <div class="value" id="stat-overdue">—</div>
+        </div>
+        <div class="stat-card due-soon">
+          <div class="label">🟡 即将到期</div>
+          <div class="value" id="stat-due-soon">—</div>
+        </div>
+        <div class="stat-card ok">
+          <div class="label">🟢 状态正常</div>
+          <div class="value" id="stat-ok">—</div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <h2>所有项目</h2>
+        <button class="btn-primary" onclick="openAddModal()">+ 添加项目</button>
+      </div>
+      <div id="items-container" class="items-list">
+        <div class="spinner"></div>
+      </div>
+    </section>
+
+    <!-- Settings -->
+    <section id="section-settings" class="hidden">
+      <form onsubmit="saveSettings(event)">
+
+        <div class="settings-card">
+          <h3>🤖 Telegram 通知</h3>
+          <div class="form-group">
+            <label class="form-label">Bot Token</label>
+            <input id="s-tg-token" type="text" class="form-input" placeholder="110201543:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw">
+            <div class="settings-help">在 @BotFather 创建 Bot 后获取 Token</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Chat ID</label>
+            <input id="s-tg-chat" type="text" class="form-input" placeholder="123456789">
+            <div class="settings-help">发消息给 @userinfobot 获取你的 Chat ID</div>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <h3>📧 邮件通知 (Resend)</h3>
+          <div class="form-group">
+            <label class="form-label">Resend API Key</label>
+            <input id="s-resend-key" type="password" class="form-input" placeholder="re_xxxxxx">
+            <div class="settings-help">在 <a href="https://resend.com" target="_blank" style="color:var(--accent)">resend.com</a> 注册免费账号后获取（每月3000封免费）</div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">发件人邮箱</label>
+              <input id="s-email-from" type="email" class="form-input" placeholder="esim@yourdomain.com">
+              <div class="settings-help">需在 Resend 验证域名</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">收件人邮箱</label>
+              <input id="s-email-to" type="email" class="form-input" placeholder="you@gmail.com">
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:12px">
+          <button type="submit" class="btn-primary">保存设置</button>
+          <button type="button" class="btn-notify" onclick="sendTestNotify()">🔔 发送测试通知</button>
+        </div>
+      </form>
+    </section>
+
+  </main>
+</div>
+
+<!-- ── Add/Edit Modal ── -->
+<div id="modal" class="modal-overlay hidden" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="modal-title">添加项目</h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="item-form" onsubmit="submitForm(event)">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">名称 *</label>
+            <input id="f-name" type="text" class="form-input" placeholder="如：中国移动eSIM" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">类型</label>
+            <select id="f-type" class="form-select">
+              <option value="esim">📱 eSIM</option>
+              <option value="server">🖥️ 服务器</option>
+              <option value="phone">☎️ 手机号</option>
+              <option value="other">📌 其他</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">描述（可选）</label>
+          <input id="f-description" type="text" class="form-input" placeholder="运营商、账号等备注">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">保号周期（天）*</label>
+          <input id="f-cycle" type="number" class="form-input" min="1" max="9999" placeholder="30" required
+            oninput="updateCyclePresets(this.value)">
+          <div class="cycle-presets">
+            <button type="button" class="cycle-btn" data-days="30" onclick="setCyclePreset(30)">30天</button>
+            <button type="button" class="cycle-btn" data-days="60" onclick="setCyclePreset(60)">60天</button>
+            <button type="button" class="cycle-btn" data-days="90" onclick="setCyclePreset(90)">90天</button>
+            <button type="button" class="cycle-btn" data-days="180" onclick="setCyclePreset(180)">180天</button>
+            <button type="button" class="cycle-btn" data-days="365" onclick="setCyclePreset(365)">365天</button>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">上次完成日期</label>
+            <input id="f-last-done" type="date" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label">提前提醒天数</label>
+            <input id="f-notify" type="number" class="form-input" min="0" max="30" value="3">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">备注</label>
+          <textarea id="f-notes" class="form-textarea" placeholder="操作步骤、密码提示等"></textarea>
+        </div>
+
+        <div class="modal-footer" style="padding:0;border:none;margin-top:4px">
+          <button type="button" class="btn-cancel" onclick="closeModal()">取消</button>
+          <button type="submit" class="btn-primary">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script src="/app.js"></script>
+</body>
+</html>
