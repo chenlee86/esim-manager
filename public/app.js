@@ -221,6 +221,7 @@ function resetForm() {
   document.getElementById('item-form').reset();
   document.getElementById('f-notify').value = '3';
   document.getElementById('f-type').value = 'esim';
+  document.getElementById('f-last-done').value = new Date().toISOString().split('T')[0];
   updateCyclePresets(null);
 }
 
