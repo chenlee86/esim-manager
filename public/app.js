@@ -323,7 +323,7 @@ async function apiFetch(method, path, body, skipAuth = false) {
   };
   if (!skipAuth) opts.headers['X-Auth-Token'] = token;
   if (body !== undefined) opts.body = JSON.stringify(body);
-  const res = await fetch('/api' + path, opts);
+  const res = await fetch(path, opts);
   if (res.status === 401 && !skipAuth) { logout(); throw new Error('会话已过期'); }
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || '请求失败');
