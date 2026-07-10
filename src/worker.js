@@ -65,9 +65,9 @@ async function handleAPI(request, env, url) {
   if (pathname === '/api/settings' && method === 'GET') return getSettings(env);
   if (pathname === '/api/settings' && method === 'PUT') return saveSettings(request, env);
 
-  // Manual notify trigger
+  // Manual notify trigger (测试：强制发送所有项目)
   if (pathname === '/api/notify' && method === 'POST') {
-    const result = await checkAndNotify(env);
+    const result = await checkAndNotify(env, { test: true });
     return json({ ok: true, ...result });
   }
 

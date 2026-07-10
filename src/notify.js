@@ -1,13 +1,16 @@
-export async function checkAndNotify(env) {
+export async function checkAndNotify(env, { test = false } = {}) {
   const db = env.DB;
   const today = todayStr();
 
-  const { results: items } = await db.prepare(`
-    SELECT * FROM items
-    WHERE next_due_at IS NULL
-       OR date(next_due_at) <= date('now', '+' || CAST(notify_days_before AS TEXT) || ' days')
-    ORDER BY next_due_at ASC NULLS FIRST
-  `).all();
+  // 测试模式：无视到期窗口，发送所有项目以验证推送通道
+  const { results: items } = test
+    ? await db.prepare(`SELECT * FROM items ORDER BY next_due_at ASC NULLS FIRST`).all()
+    : await db.prepare(`
+        SELECT * FROM items
+        WHERE next_due_at IS NULL
+           OR date(next_due_at) <= date('now', '+' || CAST(notify_days_before AS TEXT) || ' days')
+        ORDER BY next_due_at ASC NULLS FIRST
+      `).all();
 
   if (items.length === 0) return { sent: 0 };
 
@@ -18,7 +21,7 @@ export async function checkAndNotify(env) {
   const dueSoonItems = items.filter(i => i.next_due_at && i.next_due_at >= today);
   const neverDoneItems = items.filter(i => !i.next_due_at);
 
-  const tgMsg = buildTelegramMessage(overdueItems, dueSoonItems, neverDoneItems, today);
+  const tgMsg = buildTelegramMessage(overdueItems, dueSoonItems, neverDoneItems, today, test);
   const htmlMsg = buildEmailHtml(overdueItems, dueSoonItems, neverDoneItems, today);
 
   const tgToken = env.TELEGRAM_BOT_TOKEN || s.telegram_bot_token;
@@ -37,8 +40,8 @@ export async function checkAndNotify(env) {
   return { sent: items.length };
 }
 
-function buildTelegramMessage(overdue, dueSoon, neverDone, today) {
-  let msg = '📱 <b>保号管理提醒</b>\n';
+function buildTelegramMessage(overdue, dueSoon, neverDone, today, test = false) {
+  let msg = test ? '🧪 <b>保号管理 · 测试通知</b>\n' : '📱 <b>保号管理提醒</b>\n';
   msg += `<i>${today}</i>\n\n`;
 
   if (overdue.length > 0) {
